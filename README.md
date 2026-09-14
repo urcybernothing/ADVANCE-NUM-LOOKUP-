@@ -35,7 +35,7 @@ ADVANCE-NUM-LOOKUP is a terminal tool. You give it a mobile number. It checks pu
 - Protected Branding — developer credits are locked
 ```
 
-📱 Installation — Termux (Android)
+## 📱 Installation — Termux (Android)
 
 Step 1 — Update Termux
 
@@ -81,7 +81,7 @@ python anurix.py
 
 ---
 
-🐧 Installation — Linux
+## 🐧 Installation — Linux
 
 Step 1
 
