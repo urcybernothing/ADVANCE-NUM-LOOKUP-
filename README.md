@@ -1,236 +1,283 @@
+<div align="center">🔥 ADVANCE-NUM-LOOKUP
 
-## 🔥 ADVANCE-NUM-LOOKUP
+📱 Mobile Number Data-Breach Lookup Tool
 
-```markdown
+Check whether YOUR OWN mobile number appears in publicly reported data-breach records.
 
+""Python" (https://img.shields.io/badge/Python-3.x-blue?style=for-the-badge&logo=python)" (https://www.python.org/)
+""Termux" (https://img.shields.io/badge/Termux-Android-green?style=for-the-badge&logo=android)" (https://termux.com/)
+["Linux" (https://img.shields.io/badge/Linux-Supported-orange?style=for-the-badge&logo=linux)]
+""License" (https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)" (LICENSE)
 
-**Check if your mobile number was leaked in a data breach.**
+Made by ANURAG X NOTHING
 
-**Made by ANURAG X NOTHING**
+"📲 Telegram" (https://t.me/anonymousanurix) •
+"💬 Developer Channel" (https://t.me/hackedanurag) •
+"📸 Instagram" (https://www.instagram.com/hackedxanu)
 
+</div>---
+
+🚀 About
+
+ADVANCE-NUM-LOOKUP is a Python-based terminal utility designed for checking whether your own mobile number appears in publicly reported data-breach records.
+
+Depending on the available breach data and service response, the tool may display fields associated with the exposed record.
+
+«🔐 Privacy First: Only use this tool with your own number or when you have explicit authorization.»
 
 ---
 
-## ⚠️ Read This First
+✨ Features
 
-> This tool is only for checking YOUR OWN number.
-> Checking someone else's number is illegal.
-> The developer is not responsible if you misuse this tool.
+Feature| Description
+⚡ Fast Lookup| Quickly query available breach records
+📄 Record Details| Display available fields from returned records
+📦 Bulk Lookup| Process multiple authorized numbers from a file
+💾 Export| Save results in JSON and TXT formats
+🎨 Terminal UI| Clean terminal interface with Rich formatting
+📱 Termux Support| Designed to work on Android through Termux
+🐧 Linux Support| Run the project on Linux systems
+📊 Session Stats| Track activity during the current session
+🛡️ Responsible Use| Built for authorized security research and awareness
 
 ---
 
-## 📌 What Is This Tool?
+🖥️ Preview
 
-ADVANCE-NUM-LOOKUP is a terminal tool. You give it a mobile number. It checks public data breach records. Then it tells you if that number was leaked, and what details were leaked — name, father's name, address, circle, email.
+«📸 Add your terminal screenshot here.»
+
+Create this folder:
+
+assets/
+└── preview.png
+
+Then replace this section with:
+
+![ADVANCE-NUM-LOOKUP Preview](assets/preview.png)
+
+🎬 Demo
+
+You can also add a GIF:
+
+assets/
+└── demo.gif
+
+![ADVANCE-NUM-LOOKUP Demo](assets/demo.gif)
 
 ---
 
-## ⚡ Features
+📱 Installation — Termux
 
-- Fast Lookup — result in a few seconds
-- Full Details — name, father's name, address, circle, email
-- Bulk Check — check many numbers from one file
-- Auto Save — saves result as JSON and TXT file
-- Clean UI — nice colors and tables in terminal
-- Works on Termux — Android support, no root needed
-- Session Stats — see how many lookups you did
-- Protected Branding — developer credits are locked
-```
+1️⃣ Update Packages
 
-## 📱 Installation — Termux (Android)
-
-Step 1 — Update Termux
-
-```bash
 pkg update -y && pkg upgrade -y
-```
 
-Step 2 — Install Python and Git
+2️⃣ Install Python & Git
 
-```bash
 pkg install python git -y
-```
 
-Step 3 — Clone the Repository
+3️⃣ Clone Repository
 
-```bash
 git clone https://github.com/urcybernothing/ADVANCE-NUM-LOOKUP-.git
-```
 
-Step 4 — Go Into the Folder
+4️⃣ Enter Directory
 
-```bash
 cd ADVANCE-NUM-LOOKUP-
-```
 
-Step 5 — Install Required Packages
+5️⃣ Install Dependencies
 
-```bash
 pip install -r requirements.txt
-```
 
-If that fails, try:
+If required:
 
-```bash
 pip install requests rich pyfiglet
-```
 
-Step 6 — Run the Tool
+6️⃣ Launch
 
-```bash
 python anurix.py
-```
 
 ---
 
-## 🐧 Installation — Linux
+🐧 Installation — Linux
 
-Step 1
+1️⃣ Update System
 
-```bash
 sudo apt update && sudo apt upgrade -y
-```
 
-Step 2
+2️⃣ Install Requirements
 
-```bash
 sudo apt install python3 python3-pip git -y
-```
 
-Step 3
+3️⃣ Clone
 
-```bash
 git clone https://github.com/urcybernothing/ADVANCE-NUM-LOOKUP-.git
-```
 
-Step 4
+4️⃣ Enter Project
 
-```bash
 cd ADVANCE-NUM-LOOKUP-
-```
 
-Step 5
+5️⃣ Install Dependencies
 
-```bash
 pip3 install -r requirements.txt
-```
 
-Step 6
+6️⃣ Run
 
-```bash
 python3 anurix.py
-```
 
 ---
 
-## 🎮 How To Use
+🎮 Usage
 
-Start the tool:
+Start the program:
 
-```bash
 python anurix.py
-```
 
-Menu will open:
+You will see the main menu:
 
-```
-[1] Check One Number
-[2] Check Many Numbers (from file)
-[3] About Developer
-[4] Session Stats
-[5] Exit
-```
+╔══════════════════════════════════╗
+║       ADVANCE-NUM-LOOKUP         ║
+╠══════════════════════════════════╣
+║ [1] Check One Number             ║
+║ [2] Check Many Numbers           ║
+║ [3] About Developer              ║
+║ [4] Session Stats                ║
+║ [5] Exit                         ║
+╚══════════════════════════════════╝
 
-Option 1 — Type 1, press Enter, type 10-digit number, press Enter. Result shows.
+🔎 Check One Number
 
-Option 2 — Make a text file numbers.txt with one number per line. Choose option 2. Give the file path. Tool checks all.
+Choose option "1" and enter a mobile number that you own or are authorized to test.
 
-Option 3 — Shows developer info and channels.
+📦 Check Multiple Numbers
 
-Option 4 — Shows session stats.
+Create a file such as:
 
-Option 5 — Exit.
+numbers.txt
+
+Put one authorized number per line, then select the bulk lookup option.
 
 ---
 
-## 📁 Where Are Results Saved?
+📁 Results & Exports
 
-All results go into the exports/ folder. Each lookup makes two files — one .json and one .txt.
+Results are stored inside:
 
-To see saved files:
+exports/
 
-```bash
+The project can generate:
+
+exports/
+├── result.json
+└── result.txt
+
+To inspect exported files:
+
 ls exports/
-```
 
 ---
 
-## 🔧 Common Problems
+🗂️ Project Structure
 
-git: command not found → pkg install git -y
-
-python: command not found → pkg install python -y
-
-pip: command not found → pkg install python -y
-
-ModuleNotFoundError → pip install -r requirements.txt
-
-Permission denied → chmod +x anurix.py
-
-Connection error → Internet check kar, ya API down hai, thodi der baad try kar.
-
----
-
-## 🗂️ Project Files
-
-File What It Does
-anurix.py Main tool
-requirements.txt Python packages list
-install.sh Auto installer
-README.md Instructions
-LICENSE MIT license
-.gitignore Git ignore rules
+ADVANCE-NUM-LOOKUP-
+│
+├── anurix.py
+├── requirements.txt
+├── install.sh
+├── README.md
+├── LICENSE
+├── .gitignore
+│
+└── assets/
+    ├── preview.png
+    └── demo.gif
 
 ---
 
-## 🌐 Developer and Channels
+🔧 Troubleshooting
 
-Platform Handle Link
+"git: command not found"
 
-Telegram @anonymousanurix https://t.me/anonymousanurix
+pkg install git -y
 
-Telegram @hackedanurag https://t.me/hackedanurag
+"python: command not found"
 
-Instagram @hackedxanu https://www.instagram.com/hackedxanu
+pkg install python -y
 
----
+"pip: command not found"
 
-## ⚠️ Legal Warning
+pkg install python -y
 
-Use this tool only for your own number.
+"ModuleNotFoundError"
 
-· Checking your own number — allowed
-· Checking someone else's number — illegal
-· Using it for stalking or doxxing — illegal
+pip install -r requirements.txt
 
-The developer (ANURAG X NOTHING) is not responsible for any misuse.
+Permission Error
 
----
+chmod +x anurix.py
 
-## 📜 License
+Connection Error
 
-MIT License. See the LICENSE file for full text.
-
-Keep the developer credits. Do not remove them.
+Check your internet connection and verify that the external service/API used by the project is available.
 
 ---
 
-<div align="center">
+🔐 Responsible Security Use
 
-## 🔥 ANURIX — Where information lives 🔥
+This project is intended for:
 
-Join: https://t.me/anonymousanurix
+- ✅ Checking your own information
+- ✅ Authorized security research
+- ✅ Cybersecurity education
+- ✅ Personal breach-awareness checks
 
-© 2025 ANURIX — All Rights Reserved
+Do not use the project to stalk, harass, doxx, or investigate people without authorization.
+
+«Always respect privacy, applicable laws, and the terms of the data source/service you use.»
+
+---
+
+🌐 Developer
+
+ANURAG X NOTHING
+
+📢 Telegram: "@anonymousanurix" (https://t.me/anonymousanurix)
+
+🔥 Developer Channel: "@hackedanurag" (https://t.me/hackedanurag)
+
+📸 Instagram: "@hackedxanu" (https://www.instagram.com/hackedxanu)
+
+---
+
+⭐ Support the Project
+
+If this project is useful for your authorized security research or learning:
+
+⭐ Star the repository
+
+🍴 Fork the project
+
+🐛 Report bugs through Issues
+
+💡 Suggest improvements
+
+---
+
+📜 License
+
+This project is released under the MIT License.
+
+See "LICENSE" (LICENSE) for details.
+
+---
+
+<div align="center">🔥 ANURIX
+
+Where Information Lives
+
+Cybersecurity • Privacy Awareness • Security Research
+
+📲 "Join Telegram" (https://t.me/anonymousanurix)
+
+© 2026 ANURIX
 
 </div>
