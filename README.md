@@ -1,6 +1,6 @@
 ```markdown
 
-🔥 ADVANCE-NUM-LOOKUP
+## 🔥 ADVANCE-NUM-LOOKUP
 
 **Check if your mobile number was leaked in a data breach.**
 
