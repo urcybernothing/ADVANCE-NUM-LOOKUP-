@@ -231,4 +231,3 @@ Join: https://t.me/anonymousanurix
 © 2025 ANURIX — All Rights Reserved
 
 </div>
-```
