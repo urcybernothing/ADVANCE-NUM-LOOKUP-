@@ -37,7 +37,7 @@ The information returned depends on the available breach data and the service/AP
 - 📄 **Record Details** — display available fields returned by the service
 - 📦 **Bulk Lookup** — process multiple authorized numbers from a file
 - 💾 **Export Results** — save results as JSON and TXT
-- 🎨 **Clean Terminal UI** — formatted output with Rich
+- 🎨 **Clean Terminal UI** — formatted terminal output
 - 📱 **Termux Support** — run on Android without root
 - 🐧 **Linux Support** — run on Linux systems
 - 📊 **Session Stats** — track activity during the current session
@@ -46,35 +46,9 @@ The information returned depends on the available breach data and the service/AP
 
 ## 🖥️ Preview
 
-### Terminal Screenshot
-
-Add your screenshot to:
-
-```text
-assets/preview.png
-```
-
-Then use:
-
-```md
-![ADVANCE-NUM-LOOKUP Preview](assets/preview.png)
-```
-
-### 🎬 Demo GIF
-
-Optional:
-
-```text
-assets/demo.gif
-```
-
-Then use:
-
-```md
-![ADVANCE-NUM-LOOKUP Demo](assets/demo.gif)
-```
-
-> 💡 **Tip:** A real terminal screenshot or GIF makes the repository much more attractive to visitors.
+<p align="center">
+  <img src="assets/preview.png" alt="ADVANCE-NUM-LOOKUP Terminal Preview" width="900">
+</p>
 
 ---
 
@@ -245,8 +219,7 @@ ADVANCE-NUM-LOOKUP-
 ├── .gitignore
 │
 └── assets/
-    ├── preview.png
-    └── demo.gif
+    └── preview.png
 ```
 
 ---
