@@ -1,5 +1,4 @@
 ```markdown
-<div align="center">
 
 # 🔥 ADVANCE-NUM-LOOKUP
 
@@ -7,7 +6,6 @@
 
 **Made by ANURAG X NOTHING**
 
-</div>
 
 ---
 
