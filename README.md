@@ -38,7 +38,7 @@ ADVANCE-NUM-LOOKUP is a terminal tool. You give it a mobile number. It checks pu
 
  📱 Installation — Termux (Android)
 
-Step 1 — Update Termux**
+Step 1 — Update Termux
 
 ```bash
 pkg update -y && pkg upgrade -y
