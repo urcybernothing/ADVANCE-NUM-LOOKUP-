@@ -196,8 +196,11 @@ LICENSE MIT license
 ## 🌐 Developer and Channels
 
 Platform Handle Link
+
 Telegram @anonymousanurix https://t.me/anonymousanurix
+
 Telegram @hackedanurag https://t.me/hackedanurag
+
 Instagram @hackedxanu https://www.instagram.com/hackedxanu
 
 ---
