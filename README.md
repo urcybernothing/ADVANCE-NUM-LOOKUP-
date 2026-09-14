@@ -1,6 +1,6 @@
 ```markdown
 
-# 🔥 ADVANCE-NUM-LOOKUP
+## 🔥 ADVANCE-NUM-LOOKUP
 
 **Check if your mobile number was leaked in a data breach.**
 
@@ -121,7 +121,7 @@ python3 anurix.py
 
 ---
 
-🎮 How To Use
+## 🎮 How To Use
 
 Start the tool:
 
@@ -151,7 +151,7 @@ Option 5 — Exit.
 
 ---
 
-📁 Where Are Results Saved?
+## 📁 Where Are Results Saved?
 
 All results go into the exports/ folder. Each lookup makes two files — one .json and one .txt.
 
@@ -163,7 +163,7 @@ ls exports/
 
 ---
 
-🔧 Common Problems
+## 🔧 Common Problems
 
 git: command not found → pkg install git -y
 
@@ -179,7 +179,7 @@ Connection error → Internet check kar, ya API down hai, thodi der baad try kar
 
 ---
 
-🗂️ Project Files
+## 🗂️ Project Files
 
 File What It Does
 anurix.py Main tool
@@ -191,7 +191,7 @@ LICENSE MIT license
 
 ---
 
-🌐 Developer and Channels
+## 🌐 Developer and Channels
 
 Platform Handle Link
 Telegram @anonymousanurix https://t.me/anonymousanurix
@@ -200,7 +200,7 @@ Instagram @hackedxanu https://www.instagram.com/hackedxanu
 
 ---
 
-⚠️ Legal Warning
+## ⚠️ Legal Warning
 
 Use this tool only for your own number.
 
@@ -212,7 +212,7 @@ The developer (ANURAG X NOTHING) is not responsible for any misuse.
 
 ---
 
-📜 License
+## 📜 License
 
 MIT License. See the LICENSE file for full text.
 
@@ -222,7 +222,7 @@ Keep the developer credits. Do not remove them.
 
 <div align="center">
 
-🔥 ANURIX — Where information lives 🔥
+## 🔥 ANURIX — Where information lives 🔥
 
 Join: https://t.me/anonymousanurix
 
