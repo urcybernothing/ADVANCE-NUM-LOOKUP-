@@ -40,9 +40,10 @@ ADVANCE-NUM-LOOKUP is a terminal tool. You give it a mobile number. It checks pu
 
 Step 1 — Update Termux
 
+### Step 1 — Update Termux
+
 ```bash
 pkg update -y && pkg upgrade -y
-```
 
 Step 2 — Install Python and Git
 
