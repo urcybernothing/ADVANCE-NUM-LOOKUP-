@@ -1,6 +1,6 @@
 ```markdown
 
-## 🔥 ADVANCE-NUM-LOOKUP
+# 🔥 ADVANCE-NUM-LOOKUP
 
 **Check if your mobile number was leaked in a data breach.**
 
@@ -33,17 +33,15 @@ ADVANCE-NUM-LOOKUP is a terminal tool. You give it a mobile number. It checks pu
 - Works on Termux — Android support, no root needed
 - Session Stats — see how many lookups you did
 - Protected Branding — developer credits are locked
+```
 
----
-
- 📱 Installation — Termux (Android)
+📱 Installation — Termux (Android)
 
 Step 1 — Update Termux
 
-### Step 1 — Update Termux
-
 ```bash
 pkg update -y && pkg upgrade -y
+```
 
 Step 2 — Install Python and Git
 
