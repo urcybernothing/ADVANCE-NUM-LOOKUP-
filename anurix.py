@@ -6,7 +6,7 @@
 #   Telegram : https://t.me/hackedanurag
 #   Insta    : https://www.instagram.com/hackedxanu
 # ============================================================
-#   v3.1.1  ·  hardened  ·  anti-tamper  ·  termux-tuned
+#   v3.2.0  ·  hardened  ·  auto-update  ·  termux-tuned
 # ============================================================
 #
 #   ⚠  THIS FILE IS INTEGRITY-LOCKED.
@@ -23,9 +23,41 @@ import time
 import random
 import shutil
 import hashlib
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+# ---------- auto-deps (before rich import) -----------------------
+
+_REQUIRED_PKGS = ("requests", "rich", "urllib3")
+
+
+def _ensure_deps():
+    missing = []
+    for pkg in _REQUIRED_PKGS:
+        try:
+            __import__(pkg)
+        except ImportError:
+            missing.append(pkg)
+    if not missing:
+        return
+    print(f"[*] Installing missing packages: {', '.join(missing)}")
+    try:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", *missing],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        print("[!] Auto-install failed. Run manually:")
+        print(f"    pip install {' '.join(missing)}")
+        sys.exit(1)
+
+
+_ensure_deps()
+
 
 try:
     import requests
@@ -50,7 +82,7 @@ except ImportError as e:
 
 BRAND       = "ANURIX"
 TOOL        = "ADVANCE-NUM-LOOKUP"
-VERSION     = "3.1.1"
+VERSION     = "3.2.0"
 DEVELOPER   = "ANURAG X NOTHING"
 DEV_TAG     = "@anonymousanurix"
 
@@ -59,6 +91,12 @@ CH_TELEGRAM_2 = "https://t.me/hackedanurag"
 CH_INSTAGRAM  = "https://www.instagram.com/hackedxanu"
 
 _CANARY = "ANURIX::DO_NOT_STRIP::6767"
+
+
+# ---------- repo / updater config --------------------------------
+
+REPO_URL      = "https://github.com/urcybernothing/ADVANCE-NUM-LOOKUP.git"
+UPDATE_BRANCH = "main"
 
 
 # ---------- integrity membrane -----------------------------------
@@ -132,6 +170,7 @@ if not _verify_credits():
 def _is_termux() -> bool:
     return bool(os.environ.get("TERMUX_VERSION")) or \
            "com.termux" in os.environ.get("PREFIX", "")
+
 
 TERMUX    = _is_termux()
 SAFE_MODE = TERMUX and os.environ.get("ANURIX_SAFE", "1") == "1"
@@ -315,6 +354,108 @@ def fetch(number: str, use_cache: bool = True):
     return data
 
 
+# ---------- auto updater -----------------------------------------
+
+def check_for_update():
+    """Check GitHub for newer commits without breaking the tool."""
+    if os.environ.get("ANURIX_NO_UPDATE") == "1":
+        return
+    if shutil.which("git") is None:
+        return
+
+    repo = Path(__file__).resolve().parent
+
+    try:
+        remote = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=repo, capture_output=True, text=True, timeout=5,
+        )
+        if remote.returncode != 0:
+            return
+        if remote.stdout.strip().lower() != REPO_URL.lower():
+            return
+
+        fetch = subprocess.run(
+            ["git", "fetch", "origin", UPDATE_BRANCH],
+            cwd=repo, capture_output=True, text=True, timeout=30,
+        )
+        if fetch.returncode != 0:
+            return
+
+        result = subprocess.run(
+            ["git", "rev-list", "--count",
+             f"HEAD..origin/{UPDATE_BRANCH}"],
+            cwd=repo, capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return
+
+        commits = int(result.stdout.strip() or "0")
+        if commits <= 0:
+            return
+
+        console.print()
+        console.print(Panel(
+            "[bold yellow]⚡  UPDATE AVAILABLE[/bold yellow]\n\n"
+            f"  Current version : [cyan]v{VERSION}[/cyan]\n"
+            f"  New commits     : [green]{commits}[/green]\n\n"
+            "[white]A newer version is available. Update now?[/white]",
+            border_style="yellow",
+            title="[bold yellow]AUTO UPDATER[/bold yellow]",
+            box=ROUNDED,
+        ))
+
+        choice = Prompt.ask(
+            "[bold yellow]  ➤ update?[/bold yellow]",
+            choices=["y", "n"], default="y",
+        )
+        if choice != "y":
+            return
+
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=repo, capture_output=True, text=True, timeout=5,
+        )
+        if status.stdout.strip():
+            console.print(
+                "[bold red]✗ Update skipped:[/bold red] "
+                "local changes detected."
+            )
+            Prompt.ask("[dim]press ENTER to continue[/dim]",
+                       default="", show_default=False)
+            return
+
+        console.print("[bold cyan]→ Pulling latest...[/bold cyan]")
+
+        pull = subprocess.run(
+            ["git", "pull", "--ff-only", "origin", UPDATE_BRANCH],
+            cwd=repo, capture_output=True, text=True, timeout=60,
+        )
+        if pull.returncode != 0:
+            console.print("[bold red]✗ Update failed.[/bold red]")
+            Prompt.ask("[dim]press ENTER to continue[/dim]",
+                       default="", show_default=False)
+            return
+
+        console.print("[bold green]✓ Update successful![/bold green]")
+        console.print("[dim]→ restarting...[/dim]")
+        time.sleep(1.2)
+
+        try:
+            os.execv(
+                sys.executable,
+                [sys.executable, str(Path(__file__).resolve())],
+            )
+        except Exception:
+            console.print(
+                "[yellow]→ restart manually to load new version[/yellow]"
+            )
+            return
+
+    except Exception:
+        return
+
+
 # ---------- banner -------------------------------------------------
 
 BANNER_ASCII = r"""
@@ -355,6 +496,8 @@ def developer_panel():
     body.append(f"{DEVELOPER}\n", style="bold white")
     body.append("  Brand      : ", style="bold yellow")
     body.append(f"{BRAND}\n", style="bold red")
+    body.append("  Version    : ", style="bold yellow")
+    body.append(f"v{VERSION}\n", style="bold green")
     body.append("  Telegram 1 : ", style="bold yellow")
     body.append(f"{CH_TELEGRAM_1}\n", style="bold cyan")
     body.append("  Telegram 2 : ", style="bold yellow")
@@ -476,7 +619,6 @@ def _render_hit_table_narrow(records: list, number: str):
         line("Alt",     rec.get("alt"),     "cyan")
         line("Circle",  rec.get("circle"),  "magenta")
 
-        # address gets its own full-width wrap, no truncation
         body.append("  Address  : ", style="bold yellow")
         body.append(f"{_addr_clean(rec.get('address', ''))}\n",
                     style="yellow")
@@ -744,7 +886,8 @@ MENU = """
 [bold red]  [3][/bold red]  [white]About Developer[/white]
 [bold red]  [4][/bold red]  [white]Session Stats[/white]
 [bold red]  [5][/bold red]  [white]Clear Cache[/white]
-[bold red]  [6][/bold red]  [white]Exit[/white]
+[bold red]  [6][/bold red]  [white]Check for Updates[/white]
+[bold red]  [7][/bold red]  [white]Exit[/white]
 """
 
 
@@ -764,7 +907,21 @@ def clear_cache():
                default="", show_default=False)
 
 
+def manual_update():
+    console.print()
+    console.print(Panel(
+        "[bold yellow]⚡  MANUAL UPDATE CHECK[/bold yellow]\n\n"
+        "[dim]checking github for new commits...[/dim]",
+        border_style="yellow"))
+    check_for_update()
+    Prompt.ask("[dim]press ENTER to go back[/dim]",
+               default="", show_default=False)
+
+
 def main():
+    # startup sequence
+    check_for_update()
+
     banner()
     warning_panel()
     console.print()
@@ -785,7 +942,7 @@ def main():
 
         choice = Prompt.ask(
             "[bold red]  ➤ choose option[/bold red]",
-            choices=["1", "2", "3", "4", "5", "6"],
+            choices=["1", "2", "3", "4", "5", "6", "7"],
             default="1",
         )
 
@@ -805,6 +962,8 @@ def main():
         elif choice == "5":
             clear_cache()
         elif choice == "6":
+            manual_update()
+        elif choice == "7":
             console.print()
             console.print(Align.center(Text(
                 f"🔥 {BRAND} — stay safe. {DEV_TAG} 🔥",
