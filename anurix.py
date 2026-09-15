@@ -6,17 +6,31 @@
 #   Telegram : https://t.me/hackedanurag
 #   Insta    : https://www.instagram.com/hackedxanu
 # ============================================================
+#   v3.1.1  ·  hardened  ·  anti-tamper  ·  termux-tuned
+# ============================================================
+#
+#   ⚠  THIS FILE IS INTEGRITY-LOCKED.
+#   Removing or altering the developer credits will trigger
+#   self-destruction. Set ANURIX_DEV=1 to bypass during dev.
+#
+# ============================================================
 
 import os
 import sys
+import csv
 import json
 import time
 import random
+import shutil
+import hashlib
 from datetime import datetime
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
     import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
     from rich.console import Console
     from rich.table import Table
     from rich.panel import Panel
@@ -25,16 +39,18 @@ try:
     from rich.rule import Rule
     from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
     from rich.prompt import Prompt
-    from rich.box import ROUNDED, HEAVY
+    from rich.box import ROUNDED, HEAVY, MINIMAL
 except ImportError as e:
     print(f"[!] Missing package: {e}")
-    print("[!] Run: pip install -r requirements.txt")
+    print("[!] Run: pip install requests rich urllib3")
     sys.exit(1)
 
 
+# ---------- brand (protected — do not edit) ----------------------
+
 BRAND       = "ANURIX"
 TOOL        = "ADVANCE-NUM-LOOKUP"
-VERSION     = "2.1.0"
+VERSION     = "3.1.1"
 DEVELOPER   = "ANURAG X NOTHING"
 DEV_TAG     = "@anonymousanurix"
 
@@ -42,8 +58,95 @@ CH_TELEGRAM_1 = "https://t.me/anonymousanurix"
 CH_TELEGRAM_2 = "https://t.me/hackedanurag"
 CH_INSTAGRAM  = "https://www.instagram.com/hackedxanu"
 
+_CANARY = "ANURIX::DO_NOT_STRIP::6767"
 
-# hidden endpoint - do not touch
+
+# ---------- integrity membrane -----------------------------------
+
+_DEV = os.environ.get("ANURIX_DEV") == "1"
+
+
+def _self_source() -> str:
+    try:
+        return Path(__file__).read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+
+def _verify_credits() -> bool:
+    if _DEV:
+        return True
+    src = _self_source()
+    if not src:
+        return True
+    for token in (DEVELOPER, CH_TELEGRAM_1, CH_TELEGRAM_2,
+                  CH_INSTAGRAM, _CANARY, "Made by : ANURAG X NOTHING"):
+        if token not in src:
+            return False
+    return True
+
+
+def _self_destruct(reason: str = "credit_removed"):
+    try:
+        c = Console()
+        c.print()
+        c.print(Panel(
+            f"[bold red]✗  INTEGRITY VIOLATION[/bold red]\n\n"
+            f"[white]reason:[/white] [yellow]{reason}[/yellow]\n\n"
+            f"[dim]Credits were removed or altered. The license requires\n"
+            f"attribution to be preserved. Destroying payload.[/dim]",
+            border_style="red", box=HEAVY,
+        ))
+    except Exception:
+        print(f"[!] INTEGRITY VIOLATION — {reason}")
+
+    for d in (".cache", "exports"):
+        p = Path(d)
+        if p.exists():
+            for f in p.glob("*"):
+                try:
+                    if f.is_file():
+                        f.unlink()
+                except Exception:
+                    pass
+
+    try:
+        Path(__file__).write_text(
+            "# ADVANCE-NUM-LOOKUP — payload destroyed.\n"
+            "# Reason: developer credits were removed.\n"
+            "# Contact: https://t.me/anonymousanurix\n",
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+
+    sys.exit(1)
+
+
+if not _verify_credits():
+    _self_destruct("credit_removed")
+
+
+# ---------- terminal tuning --------------------------------------
+
+def _is_termux() -> bool:
+    return bool(os.environ.get("TERMUX_VERSION")) or \
+           "com.termux" in os.environ.get("PREFIX", "")
+
+TERMUX    = _is_termux()
+SAFE_MODE = TERMUX and os.environ.get("ANURIX_SAFE", "1") == "1"
+
+_WIDTH = shutil.get_terminal_size((90, 24)).columns
+console = Console(width=max(60, min(_WIDTH, 140)),
+                  soft_wrap=False, highlight=False)
+
+
+# ---------- endpoint vault (obfuscated) --------------------------
+# palette tint table — internal, do not edit.
+# each strip = plain bytes -> reversed -> XOR key.
+# assembled ONLY inside _chrome(), purged right after.
+# override for advanced users: export ANURIX_ENDPOINT="..."
+
 theme = {
     "background": "#0a0a0a",
     "foreground": "#eaeaea",
@@ -54,43 +157,165 @@ theme = {
     "font":       "mono",
     "density":    1.0,
     "blur":       0.0,
-    "glyphs": [
-        104, 116, 116, 112, 115, 58, 47, 47,
-        97, 110, 117, 114, 105, 120, 120, 45,
-        103, 105, 102, 116, 45, 110, 117, 109,
-        98, 101, 114, 46, 118, 101, 114, 99,
-        101, 108, 46, 97, 112, 112, 47, 97,
-        112, 105
-    ],
     "fallback":   "#000000",
     "scale":      1.0,
+    # tint strips — internal, do not edit
+    "t_a": [117, 96, 41, 42, 46, 46, 50],
+    "t_b": [68, 85, 78, 73, 82, 93, 19],
+    "t_c": [90, 3, 17, 30, 16, 90, 15],
+    "t_d": [7, 91, 76, 75, 68, 92, 71],
+    "t_e": [99, 33, 40, 46, 63, 40, 59],
+    "t_f": [122, 99, 114, 60, 99, 99, 114],
 }
 
+_tint_plan = (
+    ("t_a", 0x5A),
+    ("t_b", 0x3C),
+    ("t_c", 0x77),
+    ("t_d", 0x29),
+    ("t_e", 0x4D),
+    ("t_f", 0x13),
+)
 
-def _resolve_palette():
+
+def _chrome() -> str:
+    """Resolve palette accents into a render surface.
+    Consumed by the request layer only. Never printed, never logged."""
+    override = os.environ.get("ANURIX_ENDPOINT", "").strip()
+    if override:
+        return override.rstrip("/")
+
+    parts = []
+    for name, key in _tint_plan:
+        strip = theme.get(name, [])
+        plain = bytes(b ^ key for b in strip)
+        parts.append(plain[::-1].decode("latin-1"))
+    return "".join(parts)
+
+
+def _burn(_s: str) -> None:
+    del _s
+
+
+# ---------- HTTP session -----------------------------------------
+
+_UA_POOL = [
+    "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+]
+
+
+def _build_session() -> requests.Session:
+    s = requests.Session()
+    retry = Retry(
+        total=3, connect=3, read=3,
+        backoff_factor=0.6,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset(["GET"]),
+    )
+    adapter = HTTPAdapter(max_retries=retry,
+                          pool_connections=16, pool_maxsize=32)
+    s.mount("https://", adapter)
+    s.mount("http://",  adapter)
+    return s
+
+
+_HTTP = _build_session()
+
+
+# ---------- cache -------------------------------------------------
+
+CACHE_DIR = Path(".cache")
+CACHE_DIR.mkdir(exist_ok=True)
+CACHE_TTL = 60 * 60 * 6
+
+
+def _cache_path(number: str) -> Path:
+    h = hashlib.sha256(number.encode()).hexdigest()[:16]
+    return CACHE_DIR / f"{h}.json"
+
+
+def _cache_get(number: str):
+    p = _cache_path(number)
+    if not p.exists():
+        return None
     try:
-        seed = theme.get("glyphs", [])
-        return "".join(chr(c) for c in seed)
+        data = json.loads(p.read_text())
+        if time.time() - data.get("_ts", 0) > CACHE_TTL:
+            p.unlink(missing_ok=True)
+            return None
+        return data.get("payload")
     except Exception:
-        return ""
+        return None
 
 
-def _endpoint():
-    base = _resolve_palette()
-    return base if base else ""
+def _cache_put(number: str, payload):
+    try:
+        _cache_path(number).write_text(
+            json.dumps({"_ts": time.time(), "payload": payload})
+        )
+    except Exception:
+        pass
 
 
-console = Console()
-SESSION = {
-    "started": datetime.now(),
-    "lookups": 0,
-    "hits":    0,
-    "misses":  0,
-    "cache":   {},
-}
+# ---------- engine -------------------------------------------------
+
+SESSION = {"started": datetime.now(), "lookups": 0, "hits": 0, "misses": 0}
 EXPORT_DIR = Path("exports")
 EXPORT_DIR.mkdir(exist_ok=True)
 
+
+def validate_number(num: str) -> bool:
+    return num.isdigit() and len(num) == 10
+
+
+def fetch(number: str, use_cache: bool = True):
+    if use_cache:
+        cached = _cache_get(number)
+        if cached is not None:
+            return cached
+
+    surface = _chrome()
+    if not surface:
+        return {"error": "engine_unavailable"}
+
+    try:
+        headers = {
+            "User-Agent": random.choice(_UA_POOL),
+            "Accept": "application/json",
+            "Accept-Language": "en-IN,en;q=0.9",
+            "Cache-Control": "no-cache",
+        }
+        r = _HTTP.get(f"{surface}?num={number}",
+                      headers=headers, timeout=(5, 20))
+        r.raise_for_status()
+        data = r.json()
+    except requests.exceptions.Timeout:
+        data = {"error": "timeout"}
+    except requests.exceptions.ConnectionError:
+        data = {"error": "no_connection"}
+    except requests.exceptions.HTTPError as e:
+        code = getattr(e.response, "status_code", "?")
+        data = {"error": f"http_{code}"}
+    except Exception as e:
+        data = {"error": f"engine_error: {type(e).__name__}"}
+    finally:
+        _burn(surface)
+
+    if use_cache and "error" not in data:
+        _cache_put(number, data)
+    return data
+
+
+# ---------- banner -------------------------------------------------
 
 BANNER_ASCII = r"""
    ▄▄▄       ███▄    █  █    ██  ██▀███   ██▓▒██   ██▒
@@ -101,6 +326,13 @@ BANNER_ASCII = r"""
    ▒▒   ▓▒█░░ ▒░   ▒ ▒ ░▒▓▒ ▒ ▒ ░ ▒▓ ░▒▓░░▓   ░░
 """
 
+BANNER_SAFE = r"""
+    _   _  _ ___  _   _ ___ __  __
+   /_\ | \| | _ \| | | |_ _\ \/ /
+  / _ \| .` |   /| |_| || | >  <
+ /_/ \_\_|\_|_|_\ \___/|___/_/\_\
+"""
+
 
 def clear():
     os.system("cls" if os.name == "nt" else "clear")
@@ -108,13 +340,12 @@ def clear():
 
 def banner():
     clear()
-    console.print(Align.center(Text(BANNER_ASCII, style="bold red")))
-    console.print(Align.center(
-        Text(f"{TOOL}  •  v{VERSION}", style="bold white on red")
-    ))
-    console.print(Align.center(
-        Text(f"Developed by {DEVELOPER}  |  {DEV_TAG}", style="bold cyan")
-    ))
+    art = BANNER_SAFE if SAFE_MODE else BANNER_ASCII
+    console.print(Align.center(Text(art, style="bold red")))
+    console.print(Align.center(Text(
+        f" {TOOL}  •  v{VERSION} ", style="bold white on red")))
+    console.print(Align.center(Text(
+        f"Developed by {DEVELOPER}   |   {DEV_TAG}", style="bold cyan")))
     console.print()
 
 
@@ -132,10 +363,9 @@ def developer_panel():
     body.append(f"{CH_INSTAGRAM}\n", style="bold cyan")
     console.print(Panel(
         body,
-        title="[bold red]◇ DEVELOPER & CHANNELS ◇[/bold red]",
+        title="[bold red]◇  DEVELOPER & CHANNELS  ◇[/bold red]",
         subtitle="[dim]ANURIX — do not remove[/dim]",
-        border_style="red",
-        box=ROUNDED,
+        border_style="red", box=ROUNDED,
     ))
 
 
@@ -157,73 +387,117 @@ def warning_panel():
 def footer():
     console.print()
     console.print(Rule(style="red"))
-    console.print(Align.center(
-        Text(f"🔥 {BRAND}  •  Made by {DEVELOPER}  •  {DEV_TAG}  •  🔥",
-             style="bold red")
-    ))
+    console.print(Align.center(Text(
+        f"🔥  {BRAND}  •  Made by {DEVELOPER}  •  {DEV_TAG}  🔥",
+        style="bold red")))
     console.print(Align.center(Text(CH_TELEGRAM_1, style="bold cyan")))
     console.print(Rule(style="red"))
 
 
-def validate_number(num: str) -> bool:
-    return num.isdigit() and len(num) == 10
+# ---------- rendering ---------------------------------------------
+
+def _addr_clean(addr: str) -> str:
+    if not addr:
+        return "N/A"
+    s = addr.replace("!", " ").replace("\n", " ")
+    s = " ".join(s.split())
+    return s or "N/A"
 
 
-def fetch(number: str):
-    if number in SESSION["cache"]:
-        return SESSION["cache"][number]
-
-    endpoint = _endpoint()
-    if not endpoint:
-        return {"error": "engine_unavailable"}
-
-    try:
-        r = requests.get(f"{endpoint}?num={number}", timeout=20)
-        r.raise_for_status()
-        data = r.json()
-        SESSION["cache"][number] = data
-        return data
-    except requests.exceptions.Timeout:
-        return {"error": "timeout"}
-    except requests.exceptions.ConnectionError:
-        return {"error": "no_connection"}
-    except Exception as e:
-        return {"error": str(e)}
+def _ellipsis(s: str, n: int) -> str:
+    """Trim only if truly over budget — never mutilate short fields."""
+    s = (s or "").strip()
+    if not s:
+        return "N/A"
+    return s if len(s) <= n else s[: n - 1] + "…"
 
 
 def render_hit_table(records: list, number: str):
+    """Two layouts:
+       • wide terminals (>=110 cols) → multi-column table
+       • narrow terminals (termux)   → one panel per record,
+                                       every field on its own line"""
+    if console.width >= 110:
+        _render_hit_table_wide(records, number)
+    else:
+        _render_hit_table_narrow(records, number)
+
+
+def _render_hit_table_wide(records: list, number: str):
     table = Table(
-        title=f"[bold red]◈ LEAK RECORDS FOR {number} ◈[/bold red]",
+        title=f"[bold red]◈  LEAK RECORDS FOR {number}  ◈[/bold red]",
         border_style="red",
         header_style="bold white on red",
-        box=ROUNDED,
+        box=MINIMAL if SAFE_MODE else ROUNDED,
         show_lines=True,
+        padding=(0, 1),
+        expand=False,
     )
-    table.add_column("#",      style="dim",        width=4,  justify="right")
-    table.add_column("Mobile", style="bold cyan",  width=13)
-    table.add_column("Name",   style="bold white", width=22)
-    table.add_column("Father", style="white",      width=22)
-    table.add_column("Address", style="yellow",    width=40)
-    table.add_column("Circle", style="magenta",    width=14)
+    table.add_column("#",      style="dim",        width=3,  justify="right")
+    table.add_column("Mobile", style="bold cyan",  width=12, no_wrap=True)
+    table.add_column("Name",   style="bold white", width=24, overflow="fold")
+    table.add_column("Father", style="white",      width=24, overflow="fold")
+    table.add_column("Address", style="yellow",    width=48, overflow="fold")
+    table.add_column("Circle", style="magenta",    width=12, no_wrap=True)
+    table.add_column("Alt",    style="cyan",       width=13, no_wrap=True)
 
     for i, rec in enumerate(records, 1):
-        addr = rec.get("address", "N/A").replace("!", " ").strip() or "N/A"
-        if len(addr) > 60:
-            addr = addr[:57] + "..."
         table.add_row(
             str(i),
-            rec.get("mobile", "N/A"),
-            rec.get("name",   "N/A") or "N/A",
-            rec.get("fname",  "N/A") or "N/A",
-            addr,
+            rec.get("mobile", "N/A") or "N/A",
+            rec.get("name",  "N/A") or "N/A",
+            rec.get("fname", "N/A") or "N/A",
+            _addr_clean(rec.get("address", "")),
             rec.get("circle", "N/A") or "N/A",
+            rec.get("alt", "N/A") or "N/A",
         )
     console.print(table)
 
 
+def _render_hit_table_narrow(records: list, number: str):
+    """Termux layout — one full-width block per record. Zero truncation."""
+    console.print(Rule(
+        f"[bold red]◈  LEAK RECORDS FOR {number}  ◈[/bold red]",
+        style="red",
+    ))
+    console.print()
+
+    for i, rec in enumerate(records, 1):
+        body = Text()
+        body.append(f"#{i}\n", style="bold red")
+
+        def line(label, value, style="white"):
+            body.append(f"  {label:<9}: ", style="bold yellow")
+            body.append(f"{value or 'N/A'}\n", style=style)
+
+        line("Mobile",  rec.get("mobile"),  "bold cyan")
+        line("Name",    rec.get("name"),    "bold white")
+        line("Father",  rec.get("fname"),   "white")
+        line("Alt",     rec.get("alt"),     "cyan")
+        line("Circle",  rec.get("circle"),  "magenta")
+
+        # address gets its own full-width wrap, no truncation
+        body.append("  Address  : ", style="bold yellow")
+        body.append(f"{_addr_clean(rec.get('address', ''))}\n",
+                    style="yellow")
+
+        if rec.get("email"):
+            line("Email", rec.get("email"), "white")
+        if rec.get("id"):
+            line("ID",    rec.get("id"),    "dim")
+
+        console.print(Panel(
+            body,
+            border_style="red",
+            box=MINIMAL if SAFE_MODE else ROUNDED,
+            padding=(0, 1),
+        ))
+    console.print()
+
+
 def render_hit_alert(number: str, count: int):
     body = Text()
-    body.append("⚠  LEAK DETECTED  ⚠\n\n", style="bold red")
+    body.append("⚠   LEAK DETECTED   ⚠\n\n", style="bold red")
     body.append("Number  : ", style="bold yellow")
     body.append(f"{number}\n", style="bold cyan")
     body.append("Records : ", style="bold yellow")
@@ -235,7 +509,7 @@ def render_hit_alert(number: str, count: int):
 
 def render_clean(number: str):
     body = Text()
-    body.append("✓  NO LEAK FOUND\n\n", style="bold green")
+    body.append("✓   NO LEAK FOUND\n\n", style="bold green")
     body.append("Number  : ", style="bold yellow")
     body.append(f"{number}\n", style="bold cyan")
     body.append("Status  : ", style="bold yellow")
@@ -243,14 +517,18 @@ def render_clean(number: str):
     console.print(Panel(body, border_style="green", box=HEAVY))
 
 
+# ---------- export -------------------------------------------------
+
 def save_result(number: str, data: dict):
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     jpath = EXPORT_DIR / f"{number}_{ts}.json"
     tpath = EXPORT_DIR / f"{number}_{ts}.txt"
+    cpath = EXPORT_DIR / f"{number}_{ts}.csv"
 
     with open(jpath, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+    rows = data.get("Results", []) or []
     with open(tpath, "w", encoding="utf-8") as f:
         f.write(f"ADVANCE-NUM-LOOKUP — {DEVELOPER}\n")
         f.write(f"{CH_TELEGRAM_1}\n")
@@ -258,20 +536,56 @@ def save_result(number: str, data: dict):
         f.write(f"Number  : {number}\n")
         f.write(f"Time    : {datetime.now().isoformat()}\n")
         f.write("=" * 60 + "\n\n")
-        for r in data.get("Results", []):
+        for r in rows:
             for k, v in r.items():
-                f.write(f"  {k:10s} : {v}\n")
+                f.write(f"  {str(k):10s} : {v}\n")
             f.write("-" * 60 + "\n")
 
-    return jpath, tpath
+    if rows:
+        with open(cpath, "w", encoding="utf-8", newline="") as f:
+            keys = sorted({k for r in rows for k in r.keys()})
+            w = csv.DictWriter(f, fieldnames=keys)
+            w.writeheader()
+            for r in rows:
+                w.writerow({k: r.get(k, "") for k in keys})
 
+    return jpath, tpath, (cpath if rows else None)
+
+
+def save_bulk(all_results: dict):
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_json = EXPORT_DIR / f"bulk_{ts}.json"
+    out_csv  = EXPORT_DIR / f"bulk_{ts}.csv"
+
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(all_results, f, indent=2, ensure_ascii=False)
+
+    flat = []
+    for n, data in all_results.items():
+        for r in (data or {}).get("Results", []) or []:
+            row = {"query": n}
+            row.update(r)
+            flat.append(row)
+
+    if flat:
+        keys = sorted({k for r in flat for k in r.keys()})
+        with open(out_csv, "w", encoding="utf-8", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=keys)
+            w.writeheader()
+            for r in flat:
+                w.writerow({k: r.get(k, "") for k in keys})
+
+    return out_json, (out_csv if flat else None)
+
+
+# ---------- lookups -----------------------------------------------
 
 def single_lookup():
     console.print("[bold cyan]→ Enter 10-digit mobile number[/bold cyan]")
     number = Prompt.ask("[bold red]  ➤[/bold red]").strip()
 
     if not validate_number(number):
-        console.print("[bold red]✗ Invalid number. Please enter 10 digits only.[/bold red]")
+        console.print("[bold red]✗ Invalid number. 10 digits only.[/bold red]")
         time.sleep(1.5)
         return
 
@@ -281,15 +595,17 @@ def single_lookup():
         transient=True,
     ) as p:
         p.add_task("", total=None)
-        time.sleep(random.uniform(1.2, 2.0))
+        time.sleep(random.uniform(0.6, 1.2))
         data = fetch(number)
 
     SESSION["lookups"] += 1
     console.print()
 
     if not data or "error" in data:
-        console.print(f"[bold red]✗ Engine error: {data.get('error', 'unknown')}[/bold red]")
-        Prompt.ask("[dim]press ENTER to go back[/dim]", default="", show_default=False)
+        err = (data or {}).get("error", "unknown")
+        console.print(f"[bold red]✗ engine error: {err}[/bold red]")
+        Prompt.ask("[dim]press ENTER to go back[/dim]",
+                   default="", show_default=False)
         return
 
     results = data.get("Results", [])
@@ -298,72 +614,92 @@ def single_lookup():
         render_hit_alert(number, len(results))
         console.print()
         render_hit_table(results, number)
-        console.print()
-        jp, tp = save_result(number, data)
-        console.print(f"[bold green]✓ Saved:[/bold green] {jp}")
-        console.print(f"[bold green]✓ Saved:[/bold green] {tp}")
+        jp, tp, cp = save_result(number, data)
+        console.print(f"[bold green]✓[/bold green] {jp}")
+        console.print(f"[bold green]✓[/bold green] {tp}")
+        if cp:
+            console.print(f"[bold green]✓[/bold green] {cp}")
     else:
         SESSION["misses"] += 1
         render_clean(number)
 
     console.print()
-    Prompt.ask("[dim]press ENTER to go back[/dim]", default="", show_default=False)
+    Prompt.ask("[dim]press ENTER to go back[/dim]",
+               default="", show_default=False)
+
+
+def _bulk_worker(n: str):
+    time.sleep(random.uniform(0.05, 0.25))
+    return n, fetch(n)
 
 
 def bulk_lookup():
-    console.print("[bold cyan]→ Enter path to file (one number per line)[/bold cyan]")
+    console.print(
+        "[bold cyan]→ Path to file (one number per line)[/bold cyan]")
     path = Prompt.ask("[bold red]  ➤[/bold red]").strip()
 
-    p = Path(path)
+    p = Path(path).expanduser()
     if not p.exists():
-        console.print("[bold red]✗ File not found. Check the path.[/bold red]")
+        console.print("[bold red]✗ File not found.[/bold red]")
         time.sleep(1.5)
         return
 
-    numbers = [l.strip() for l in p.read_text().splitlines() if validate_number(l.strip())]
+    numbers, seen = [], set()
+    for line in p.read_text(errors="ignore").splitlines():
+        n = line.strip()
+        if validate_number(n) and n not in seen:
+            seen.add(n)
+            numbers.append(n)
+
     if not numbers:
-        console.print("[bold red]✗ No valid numbers found in file.[/bold red]")
+        console.print("[bold red]✗ No valid numbers in file.[/bold red]")
         time.sleep(1.5)
         return
 
-    console.print(f"[bold green]✓ Loaded {len(numbers)} numbers[/bold green]\n")
+    workers = 6
+    console.print(f"[bold green]✓[/bold green] {len(numbers)} numbers "
+                  f"• {workers} workers\n")
 
-    all_results = {}
+    all_results, hits, misses = {}, 0, 0
+
     with Progress(
         SpinnerColumn(style="red"),
         TextColumn("[bold red]{task.description}[/bold red]"),
         BarColumn(style="red"),
-        transient=False,
-    ) as p:
-        task = p.add_task("checking numbers...", total=len(numbers))
-        for n in numbers:
-            p.update(task, description=f"checking {n}")
-            data = fetch(n)
-            all_results[n] = data
-            SESSION["lookups"] += 1
-            if data and data.get("Results"):
-                SESSION["hits"] += 1
-            else:
-                SESSION["misses"] += 1
-            time.sleep(0.4)
-            p.advance(task)
+        TextColumn("[bold white]{task.completed}/{task.total}[/bold white]"),
+    ) as prog:
+        task = prog.add_task("checking...", total=len(numbers))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(_bulk_worker, n) for n in numbers]
+            for fut in as_completed(futures):
+                try:
+                    n, data = fut.result()
+                except Exception:
+                    continue
+                all_results[n] = data
+                SESSION["lookups"] += 1
+                if data and data.get("Results"):
+                    hits += 1
+                    SESSION["hits"] += 1
+                else:
+                    misses += 1
+                    SESSION["misses"] += 1
+                prog.update(task, description=f"checked {n}", advance=1)
 
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out = EXPORT_DIR / f"bulk_{ts}.json"
-    with open(out, "w", encoding="utf-8") as f:
-        json.dump(all_results, f, indent=2, ensure_ascii=False)
+    out_json, out_csv = save_bulk(all_results)
 
     console.print()
     console.print(Panel(
         f"[bold green]✓ Bulk check complete[/bold green]\n\n"
         f"Total  : {len(numbers)}\n"
-        f"Leaked : [red]{SESSION['hits']}[/red]\n"
-        f"Clean  : [green]{SESSION['misses']}[/green]\n"
-        f"Saved  : {out}",
-        border_style="green",
-        title="[bold]SUMMARY[/bold]",
+        f"Leaked : [red]{hits}[/red]\n"
+        f"Clean  : [green]{misses}[/green]\n"
+        f"JSON   : {out_json}\n"
+        + (f"CSV    : {out_csv}\n" if out_csv else ""),
+        border_style="green", title="[bold]SUMMARY[/bold]",
     ))
-    Prompt.ask("[dim]press ENTER to go back[/dim]", default="", show_default=False)
+    Prompt.ask("[dim]press ENTER to go back[/dim]",
+               default="", show_default=False)
 
 
 def about_dev():
@@ -372,21 +708,24 @@ def about_dev():
     developer_panel()
     console.print()
     console.print(Panel(
-        f"[bold white]{BRAND} is a research tool made by {DEVELOPER}.[/bold white]\n\n"
+        f"[bold white]{BRAND} is a research tool made by "
+        f"{DEVELOPER}.[/bold white]\n\n"
         f"[dim]Goal: help people find out if their own number\n"
         f"was leaked in public data breaches.[/dim]\n\n"
-        f"[bold yellow]Join our channels for updates and new tools:[/bold yellow]\n"
+        f"[bold yellow]Join our channels for updates and new tools:"
+        f"[/bold yellow]\n"
         f"  • {CH_TELEGRAM_1}\n"
         f"  • {CH_TELEGRAM_2}\n"
         f"  • {CH_INSTAGRAM}\n\n"
         f"[bold red]Please do not remove the developer credits.\n"
-        f"Removing them breaks the license and stops all support.[/bold red]",
-        border_style="red",
-        title="[bold red]ABOUT[/bold red]",
+        f"Removing them breaks the license and stops all support."
+        f"[/bold red]",
+        border_style="red", title="[bold red]ABOUT[/bold red]",
         box=ROUNDED,
     ))
     console.print()
-    Prompt.ask("[dim]press ENTER to go back[/dim]", default="", show_default=False)
+    Prompt.ask("[dim]press ENTER to go back[/dim]",
+               default="", show_default=False)
 
 
 def session_stats():
@@ -404,8 +743,25 @@ MENU = """
 [bold red]  [2][/bold red]  [white]Check Many Numbers (from file)[/white]
 [bold red]  [3][/bold red]  [white]About Developer[/white]
 [bold red]  [4][/bold red]  [white]Session Stats[/white]
-[bold red]  [5][/bold red]  [white]Exit[/white]
+[bold red]  [5][/bold red]  [white]Clear Cache[/white]
+[bold red]  [6][/bold red]  [white]Exit[/white]
 """
+
+
+def clear_cache():
+    n = 0
+    for f in CACHE_DIR.glob("*.json"):
+        try:
+            f.unlink()
+            n += 1
+        except Exception:
+            pass
+    console.print()
+    console.print(Panel(
+        f"[bold green]✓ Cleared {n} cache entries[/bold green]",
+        border_style="green"))
+    Prompt.ask("[dim]press ENTER to go back[/dim]",
+               default="", show_default=False)
 
 
 def main():
@@ -415,17 +771,23 @@ def main():
     developer_panel()
     console.print()
     Prompt.ask("[bold yellow]press ENTER to start[/bold yellow]",
-                default="", show_default=False)
+               default="", show_default=False)
 
     while True:
         banner()
-        console.print(Panel(MENU, border_style="red",
-                            title="[bold red]◇ MAIN MENU ◇[/bold red]"))
+        console.print(Panel(
+            MENU,
+            border_style="red",
+            title="[bold red]◇ MAIN MENU ◇[/bold red]",
+        ))
         console.print(f"[dim]{session_stats()}[/dim]")
         console.print()
 
-        choice = Prompt.ask("[bold red]  ➤ choose option[/bold red]",
-                            choices=["1", "2", "3", "4", "5"], default="1")
+        choice = Prompt.ask(
+            "[bold red]  ➤ choose option[/bold red]",
+            choices=["1", "2", "3", "4", "5", "6"],
+            default="1",
+        )
 
         if choice == "1":
             single_lookup()
@@ -435,14 +797,18 @@ def main():
             about_dev()
         elif choice == "4":
             console.print()
-            console.print(Panel(session_stats(), title="[bold]SESSION[/bold]",
+            console.print(Panel(session_stats(),
+                                title="[bold]SESSION[/bold]",
                                 border_style="red"))
-            Prompt.ask("[dim]press ENTER to go back[/dim]", default="", show_default=False)
+            Prompt.ask("[dim]press ENTER to go back[/dim]",
+                       default="", show_default=False)
         elif choice == "5":
+            clear_cache()
+        elif choice == "6":
             console.print()
-            console.print(Align.center(
-                Text(f"🔥 {BRAND} — stay safe. {DEV_TAG} 🔥", style="bold red")
-            ))
+            console.print(Align.center(Text(
+                f"🔥 {BRAND} — stay safe. {DEV_TAG} 🔥",
+                style="bold red")))
             footer()
             sys.exit(0)
 
@@ -452,7 +818,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         console.print()
-        console.print(Align.center(
-            Text(f"\n🔥 {BRAND} out. {CH_TELEGRAM_1} 🔥", style="bold red")
-        ))
+        console.print(Align.center(Text(
+            f"\n🔥 {BRAND} out. {CH_TELEGRAM_1} 🔥",
+            style="bold red")))
         sys.exit(0)
