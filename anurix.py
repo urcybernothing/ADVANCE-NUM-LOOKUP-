@@ -6,7 +6,7 @@
 #   Telegram : https://t.me/hackedanurag
 #   Insta    : https://www.instagram.com/hackedxanu
 # ============================================================
-#   v3.2.0  ·  hardened  ·  auto-update  ·  termux-tuned
+#   v3.2.3  ·  hardened  ·  auto-update  ·  termux-tuned
 # ============================================================
 #
 #   ⚠  THIS FILE IS INTEGRITY-LOCKED.
@@ -82,7 +82,7 @@ except ImportError as e:
 
 BRAND       = "ANURIX"
 TOOL        = "ADVANCE-NUM-LOOKUP"
-VERSION     = "3.2.0"
+VERSION     = "3.2.3"
 DEVELOPER   = "ANURAG X NOTHING"
 DEV_TAG     = "@anonymousanurix"
 
@@ -468,10 +468,11 @@ BANNER_ASCII = r"""
 """
 
 BANNER_SAFE = r"""
-    _   _  _ ___  _   _ ___ __  __
-   /_\ | \| | _ \| | | |_ _\ \/ /
-  / _ \| .` |   /| |_| || | >  <
- /_/ \_\_|\_|_|_\ \___/|___/_/\_\
+    _     _   _  _   _  ____   ___ __  __
+   / \   | \ | || | | ||  _ \ |_ _|\ \/ /
+  / _ \  |  \| || | | || |_) | | |  \  /
+ / ___ \ | |\  || |_| ||  _ <  | |  /  \
+/_/   \_\|_| \_|\___/ |_| \_\|___|/_/\_\
 """
 
 
@@ -537,131 +538,257 @@ def footer():
     console.print(Rule(style="red"))
 
 
-# ---------- rendering ---------------------------------------------
+# ---------- API response rendering --------------------------------
 
-def _addr_clean(addr: str) -> str:
-    if not addr:
-        return "N/A"
-    s = addr.replace("!", " ").replace("\n", " ")
-    s = " ".join(s.split())
-    return s or "N/A"
+def _label(k) -> str:
+    return str(k).replace("_", " ").strip().title()
 
 
-def _ellipsis(s: str, n: int) -> str:
-    """Trim only if truly over budget — never mutilate short fields."""
-    s = (s or "").strip()
-    if not s:
-        return "N/A"
-    return s if len(s) <= n else s[: n - 1] + "…"
+def _fmt_scalar(v):
+    """Return (text, style) tuple — Text.append needs style separately,
+    markup inside the string would print literally."""
+    if v is None:
+        return "—  null", "dim"
+    if v is True:
+        return "true", "bold green"
+    if v is False:
+        return "false", "bold red"
+    if isinstance(v, (int, float)):
+        return str(v), "bold cyan"
+    if isinstance(v, str):
+        if not v.strip():
+            return "(empty)", "dim"
+        return v, "white"
+    return str(v), "white"
 
 
-def render_hit_table(records: list, number: str):
-    """Two layouts:
-       • wide terminals (>=110 cols) → multi-column table
-       • narrow terminals (termux)   → one panel per record,
-                                       every field on its own line"""
-    if console.width >= 110:
-        _render_hit_table_wide(records, number)
-    else:
-        _render_hit_table_narrow(records, number)
+def _try_parse_json(v):
+    """If v is a string that looks like JSON, parse it. Otherwise return v."""
+    if not isinstance(v, str):
+        return v
+    s = v.strip()
+    if not s or s[0] not in "{[":
+        return v
+    try:
+        return json.loads(s)
+    except Exception:
+        return v
 
 
-def _render_hit_table_wide(records: list, number: str):
-    table = Table(
-        title=f"[bold red]◈  LEAK RECORDS FOR {number}  ◈[/bold red]",
-        border_style="red",
-        header_style="bold white on red",
-        box=MINIMAL if SAFE_MODE else ROUNDED,
-        show_lines=True,
-        padding=(0, 1),
-        expand=False,
-    )
-    table.add_column("#",      style="dim",        width=3,  justify="right")
-    table.add_column("Mobile", style="bold cyan",  width=12, no_wrap=True)
-    table.add_column("Name",   style="bold white", width=24, overflow="fold")
-    table.add_column("Father", style="white",      width=24, overflow="fold")
-    table.add_column("Address", style="yellow",    width=48, overflow="fold")
-    table.add_column("Circle", style="magenta",    width=12, no_wrap=True)
-    table.add_column("Alt",    style="cyan",       width=13, no_wrap=True)
-
-    for i, rec in enumerate(records, 1):
-        table.add_row(
-            str(i),
-            rec.get("mobile", "N/A") or "N/A",
-            rec.get("name",  "N/A") or "N/A",
-            rec.get("fname", "N/A") or "N/A",
-            _addr_clean(rec.get("address", "")),
-            rec.get("circle", "N/A") or "N/A",
-            rec.get("alt", "N/A") or "N/A",
-        )
-    console.print(table)
+def _is_record_list(lst) -> bool:
+    return isinstance(lst, list) and bool(lst) and \
+           all(isinstance(x, dict) for x in lst)
 
 
-def _render_hit_table_narrow(records: list, number: str):
-    """Termux layout — one full-width block per record. Zero truncation."""
+def _has_records(data) -> bool:
+    """True if the response (after JSON unwrap) has at least one record."""
+    data = _try_parse_json(data)
+    if isinstance(data, list):
+        return _is_record_list(data)
+    if not isinstance(data, dict):
+        return False
+    for v in data.values():
+        v2 = _try_parse_json(v)
+        if _is_record_list(v2):
+            return True
+        if isinstance(v2, dict) and _has_records(v2):
+            return True
+    return False
+
+
+def _extract_records(data):
+    """Recursively pull every record (dict) out of any API response."""
+    rows = []
+    data = _try_parse_json(data)
+
+    if isinstance(data, list):
+        for x in data:
+            if isinstance(x, dict):
+                rows.append(x)
+        return rows
+
+    if not isinstance(data, dict):
+        return rows
+
+    for v in data.values():
+        v2 = _try_parse_json(v)
+        if _is_record_list(v2):
+            rows.extend(v2)
+        elif isinstance(v2, dict):
+            rows.extend(_extract_records(v2))
+        elif isinstance(v2, list):
+            for x in v2:
+                if isinstance(x, dict):
+                    rows.append(x)
+    return rows
+
+
+def _render_records_table(title: str, records: list):
+    """Render list of dicts — as a table on wide, panels on narrow."""
+    if not records:
+        return
+
+    keys, seen = [], set()
+    for r in records:
+        for k in r.keys():
+            if k not in seen:
+                seen.add(k)
+                keys.append(k)
+
+    console.print()
     console.print(Rule(
-        f"[bold red]◈  LEAK RECORDS FOR {number}  ◈[/bold red]",
+        f"[bold red]◈  {title}  ·  {len(records)} record(s)  ◈[/bold red]",
         style="red",
     ))
     console.print()
 
-    for i, rec in enumerate(records, 1):
-        body = Text()
-        body.append(f"#{i}\n", style="bold red")
-
-        def line(label, value, style="white"):
-            body.append(f"  {label:<9}: ", style="bold yellow")
-            body.append(f"{value or 'N/A'}\n", style=style)
-
-        line("Mobile",  rec.get("mobile"),  "bold cyan")
-        line("Name",    rec.get("name"),    "bold white")
-        line("Father",  rec.get("fname"),   "white")
-        line("Alt",     rec.get("alt"),     "cyan")
-        line("Circle",  rec.get("circle"),  "magenta")
-
-        body.append("  Address  : ", style="bold yellow")
-        body.append(f"{_addr_clean(rec.get('address', ''))}\n",
-                    style="yellow")
-
-        if rec.get("email"):
-            line("Email", rec.get("email"), "white")
-        if rec.get("id"):
-            line("ID",    rec.get("id"),    "dim")
-
-        console.print(Panel(
-            body,
+    if console.width >= 110:
+        table = Table(
             border_style="red",
+            header_style="bold white on red",
             box=MINIMAL if SAFE_MODE else ROUNDED,
+            show_lines=True,
             padding=(0, 1),
-        ))
+            expand=False,
+        )
+        table.add_column("#", style="dim", width=3, justify="right")
+        for k in keys:
+            table.add_column(_label(k), style="white",
+                             overflow="fold", max_width=30)
+        for i, rec in enumerate(records, 1):
+            row = [str(i)]
+            for k in keys:
+                v = rec.get(k)
+                if v is None:
+                    row.append("[dim]—[/dim]")
+                elif isinstance(v, (list, dict)):
+                    row.append(json.dumps(v, ensure_ascii=False))
+                else:
+                    row.append(str(v))
+            table.add_row(*row)
+        console.print(table)
+    else:
+        for i, rec in enumerate(records, 1):
+            body = Text()
+            body.append(f"#{i}\n", style="bold red")
+            for k in keys:
+                v = rec.get(k)
+                body.append(f"  {_label(k):<12}: ", style="bold yellow")
+                if v is None:
+                    body.append("—\n", style="dim")
+                elif isinstance(v, (list, dict)):
+                    body.append(
+                        f"{json.dumps(v, ensure_ascii=False)}\n",
+                        style="white")
+                else:
+                    body.append(f"{v}\n", style="white")
+            console.print(Panel(
+                body, border_style="red",
+                box=MINIMAL if SAFE_MODE else ROUNDED,
+                padding=(0, 1),
+            ))
     console.print()
 
 
-def render_hit_alert(number: str, count: int):
+def _render_scalar_list(title: str, lst: list):
+    if not lst:
+        return
     body = Text()
-    body.append("⚠   LEAK DETECTED   ⚠\n\n", style="bold red")
-    body.append("Number  : ", style="bold yellow")
-    body.append(f"{number}\n", style="bold cyan")
-    body.append("Records : ", style="bold yellow")
-    body.append(f"{count}\n", style="bold red")
-    body.append("Status  : ", style="bold yellow")
-    body.append("EXPOSED", style="bold red")
-    console.print(Panel(body, border_style="red", box=HEAVY))
+    for i, x in enumerate(lst, 1):
+        x2 = _try_parse_json(x)
+        body.append(f"  {i:>3}. ", style="bold yellow")
+        if isinstance(x2, (dict, list)):
+            body.append(f"{json.dumps(x2, ensure_ascii=False)}\n",
+                        style="white")
+        else:
+            txt, sty = _fmt_scalar(x2)
+            body.append(f"{txt}\n", style=sty)
+    console.print(Panel(
+        body,
+        title=f"[bold yellow]{title}  ({len(lst)})[/bold yellow]",
+        border_style="yellow",
+        box=MINIMAL if SAFE_MODE else ROUNDED,
+    ))
 
 
-def render_clean(number: str):
-    body = Text()
-    body.append("✓   NO LEAK FOUND\n\n", style="bold green")
-    body.append("Number  : ", style="bold yellow")
-    body.append(f"{number}\n", style="bold cyan")
-    body.append("Status  : ", style="bold yellow")
-    body.append("CLEAN", style="bold green")
-    console.print(Panel(body, border_style="green", box=HEAVY))
+def _render_dict(title: str, d: dict, top: bool = False):
+    """Recursively render a dict. JSON-strings auto-parsed.
+    Nested dicts → panels. Record lists → tables."""
+    if not isinstance(d, dict):
+        return
+
+    scalars, nested_dicts, record_lists, scalar_lists = {}, [], [], []
+
+    for k, v in d.items():
+        v2 = _try_parse_json(v)
+        if isinstance(v2, dict):
+            nested_dicts.append((k, v2))
+        elif _is_record_list(v2):
+            record_lists.append((k, v2))
+        elif isinstance(v2, list):
+            scalar_lists.append((k, v2))
+        else:
+            scalars[k] = v2
+
+    if scalars:
+        body = Text()
+        for k, v in scalars.items():
+            body.append(f"  {_label(k):<14}: ", style="bold yellow")
+            txt, sty = _fmt_scalar(v)
+            body.append(f"{txt}\n", style=sty)
+        console.print(Panel(
+            body,
+            title=(f"[bold red]◈  {title}  ◈[/bold red]" if top
+                   else f"[bold yellow]◇  {title}  ◇[/bold yellow]"),
+            border_style="red" if top else "yellow",
+            box=ROUNDED,
+        ))
+
+    for k, v in record_lists:
+        _render_records_table(_label(k), v)
+
+    for k, v in scalar_lists:
+        _render_scalar_list(_label(k), v)
+
+    for k, v in nested_dicts:
+        _render_dict(_label(k), v, top=False)
+
+
+def render_api_response(number: str, data):
+    """Show the API response exactly as returned — parsed + pretty."""
+    data = _try_parse_json(data)
+
+    if data is None:
+        console.print(Panel("[red]no response[/red]", border_style="red"))
+        return
+
+    console.print()
+    console.print(Rule(
+        f"[bold red]◈  API RESPONSE  —  {number}  ◈[/bold red]",
+        style="red",
+    ))
+    console.print()
+
+    if isinstance(data, dict):
+        _render_dict(f"API RESPONSE — {number}", data, top=True)
+
+    elif _is_record_list(data):
+        _render_records_table(f"API RESPONSE — {number}", data)
+
+    elif isinstance(data, list):
+        _render_scalar_list(f"API RESPONSE — {number}", data)
+
+    else:
+        console.print(Panel(
+            Text(str(data), style="white"),
+            title=f"[bold red]◈ API RESPONSE — {number} ◈[/bold red]",
+            border_style="red", box=ROUNDED,
+        ))
 
 
 # ---------- export -------------------------------------------------
 
-def save_result(number: str, data: dict):
+def save_result(number: str, data):
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     jpath = EXPORT_DIR / f"{number}_{ts}.json"
     tpath = EXPORT_DIR / f"{number}_{ts}.txt"
@@ -670,7 +797,8 @@ def save_result(number: str, data: dict):
     with open(jpath, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    rows = data.get("Results", []) or []
+    rows = _extract_records(data)
+
     with open(tpath, "w", encoding="utf-8") as f:
         f.write(f"ADVANCE-NUM-LOOKUP — {DEVELOPER}\n")
         f.write(f"{CH_TELEGRAM_1}\n")
@@ -678,10 +806,8 @@ def save_result(number: str, data: dict):
         f.write(f"Number  : {number}\n")
         f.write(f"Time    : {datetime.now().isoformat()}\n")
         f.write("=" * 60 + "\n\n")
-        for r in rows:
-            for k, v in r.items():
-                f.write(f"  {str(k):10s} : {v}\n")
-            f.write("-" * 60 + "\n")
+        f.write(json.dumps(data, indent=2, ensure_ascii=False))
+        f.write("\n")
 
     if rows:
         with open(cpath, "w", encoding="utf-8", newline="") as f:
@@ -704,7 +830,7 @@ def save_bulk(all_results: dict):
 
     flat = []
     for n, data in all_results.items():
-        for r in (data or {}).get("Results", []) or []:
+        for r in _extract_records(data):
             row = {"query": n}
             row.update(r)
             flat.append(row)
@@ -743,27 +869,47 @@ def single_lookup():
     SESSION["lookups"] += 1
     console.print()
 
-    if not data or "error" in data:
-        err = (data or {}).get("error", "unknown")
-        console.print(f"[bold red]✗ engine error: {err}[/bold red]")
+    if not data:
+        console.print("[bold red]✗ empty response[/bold red]")
         Prompt.ask("[dim]press ENTER to go back[/dim]",
                    default="", show_default=False)
         return
 
-    results = data.get("Results", [])
-    if results:
+    if isinstance(data, dict) and data.get("error"):
+        console.print(
+            f"[bold red]✗ engine error: {data['error']}[/bold red]")
+        Prompt.ask("[dim]press ENTER to go back[/dim]",
+                   default="", show_default=False)
+        return
+
+    # ── pretty API response ──
+    render_api_response(number, data)
+
+    if _has_records(data):
         SESSION["hits"] += 1
-        render_hit_alert(number, len(results))
         console.print()
-        render_hit_table(results, number)
-        jp, tp, cp = save_result(number, data)
-        console.print(f"[bold green]✓[/bold green] {jp}")
-        console.print(f"[bold green]✓[/bold green] {tp}")
-        if cp:
-            console.print(f"[bold green]✓[/bold green] {cp}")
+        console.print(Panel(
+            f"[bold red]⚠  DATA FOUND[/bold red]\n\n"
+            f"Number : [bold cyan]{number}[/bold cyan]\n"
+            f"Status : [bold red]EXPOSED[/bold red]",
+            border_style="red", box=HEAVY,
+        ))
     else:
         SESSION["misses"] += 1
-        render_clean(number)
+        console.print()
+        console.print(Panel(
+            f"[bold green]✓  NO LEAK FOUND[/bold green]\n\n"
+            f"Number : [bold cyan]{number}[/bold cyan]\n"
+            f"Status : [bold green]CLEAN[/bold green]",
+            border_style="green", box=HEAVY,
+        ))
+
+    jp, tp, cp = save_result(number, data)
+    console.print()
+    console.print(f"[bold green]✓[/bold green] {jp}")
+    console.print(f"[bold green]✓[/bold green] {tp}")
+    if cp:
+        console.print(f"[bold green]✓[/bold green] {cp}")
 
     console.print()
     Prompt.ask("[dim]press ENTER to go back[/dim]",
@@ -820,7 +966,7 @@ def bulk_lookup():
                     continue
                 all_results[n] = data
                 SESSION["lookups"] += 1
-                if data and data.get("Results"):
+                if _has_records(data):
                     hits += 1
                     SESSION["hits"] += 1
                 else:
@@ -840,6 +986,16 @@ def bulk_lookup():
         + (f"CSV    : {out_csv}\n" if out_csv else ""),
         border_style="green", title="[bold]SUMMARY[/bold]",
     ))
+
+    for n, data in all_results.items():
+        if _has_records(data):
+            console.print()
+            console.print(Rule(
+                f"[bold yellow]◈ SAMPLE RESPONSE — {n} ◈[/bold yellow]",
+                style="yellow"))
+            render_api_response(n, data)
+            break
+
     Prompt.ask("[dim]press ENTER to go back[/dim]",
                default="", show_default=False)
 
@@ -919,7 +1075,6 @@ def manual_update():
 
 
 def main():
-    # startup sequence
     check_for_update()
 
     banner()
